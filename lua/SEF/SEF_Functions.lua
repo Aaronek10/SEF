@@ -48,6 +48,7 @@ if SERVER then
                 FunctionBegin = effect.EffectBegin,
                 FunctionEnd = effect.EffectEnd,
                 FunctionOnRemove = effect.EffectOnRemove,
+                Stackable = effect.Stackable,
                 StartTime = CurTime(),
                 Duration = time,
                 Args = args

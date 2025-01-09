@@ -23,10 +23,11 @@ if SERVER then
                             effectData.FunctionEnd(entity, unpack(effectData.Args))
                         end
 
-                        entity:RemoveEffect(effectName)
                         if effectData.Stackable then
                             entity:ResetSEFStacks(effectName)
                         end
+
+                        entity:RemoveEffect(effectName)
                     end
                 end
             elseif not IsValid(entity) then

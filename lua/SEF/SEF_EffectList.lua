@@ -91,6 +91,13 @@ StatusEffects = {
                 ent.HealthBoostEffectSound = nil
             end
         end,
+        EffectOnRemove = function(ent)
+            if ent.HealthBoostLastAdded then
+                BaseStatRemove(ent, "MaxHealth", ent.HealthBoostLastAdded)
+                ent.HealthBoostLastAdded = nil
+                ent.HealthBoostEffectSound = nil
+            end
+        end,
         HookType = "",
         HookFunction = function() end
     },
@@ -293,6 +300,16 @@ StatusEffects = {
                 end
             end
         end,
+        EffectOnRemove = function(ent)
+            if ent:IsPlayer() or ent.IsLambdaPlayer then
+                if ent.HasteEffectLastAdded then
+                    BaseStatRemove(ent, "WalkSpeed", ent.HasteEffectLastAdded)
+                    BaseStatRemove(ent, "RunSpeed", ent.HasteEffectLastAdded)
+                    ent.HasteEffectLastAdded = nil
+                    ent.HasteEffectSound = nil
+                end
+            end
+        end,
         DisplayFunction = function(ent)
             if ent:IsValid() then
                 -- Inicjalizacja czasu i liczby cząsteczek, jeśli nie istnieją
@@ -438,6 +455,22 @@ StatusEffects = {
             ent.HinderedParticleTime = nil
             ent.HinderedParticleCount = nil
         end,
+        EffectOnRemove = function(ent)
+            if ent:IsPlayer() then
+                if ent.HinderedEffectLastAdded then
+                    BaseStatAdd(ent, "WalkSpeed", ent.HinderedEffectLastAdded)
+                    BaseStatAdd(ent, "RunSpeed", ent.HinderedEffectLastAdded)
+                    ent.HinderedEffectLastAdded = nil
+                end
+            elseif ent:IsNPC() and not ent:IsNextBot() and ent:Health() > 0 then
+                ent:SetMovementActivity(ent.PreviousMovement)
+                ent.PreviousMovement = nil
+            end
+
+            ent.HinderedEffectSound = nil
+            ent.HinderedParticleTime = nil
+            ent.HinderedParticleCount = nil
+        end,
         DisplayFunction = function(ent)
             if ent:IsValid() then
                 -- Inicjalizacja czasu i liczby cząsteczek, jeśli nie istnieją
@@ -528,14 +561,11 @@ StatusEffects = {
                     else
                         ent:TakeDamage(damageamount)
                     end
-                    ent.BleedingEffectDelay = CurTime() + BleedDelay
 
+                    
                     local DmgSound = {
-                        "physics/flesh/flesh_impact_bullet1.wav",
-                        "physics/flesh/flesh_impact_bullet2.wav",
-                        "physics/flesh/flesh_impact_bullet3.wav",
-                        "physics/flesh/flesh_impact_bullet4.wav",
-                        "physics/flesh/flesh_impact_bullet5.wav",
+                        "weapons/crossbow/hitbod1.wav",
+                        "weapons/crossbow/hitbod2.wav"
                     }
 
                     local randomSound = DmgSound[math.random(#DmgSound)]
@@ -548,7 +578,9 @@ StatusEffects = {
                     effectData:SetColor(0) -- Kolor krwi (0 - czerwony, 1 - żółty)
                     util.Effect("BloodImpact", effectData, true, true)
 
-                    ent:EmitSound(randomSound, 100, 140, 1, CHAN_AUTO)
+                    ent:EmitSound(randomSound, 100, math.random(90, 140), 1, CHAN_AUTO)
+                    
+                    ent.BleedingEffectDelay = CurTime() + BleedDelay
                 end
             end
         end,
@@ -806,25 +838,35 @@ StatusEffects = {
         end,
         Effect = function(ent, time, dischAmount, delay)
             local TimeLeft = ent:GetTimeLeft("Discharge")
-            if TimeLeft > 0.1  then
-    
-                if not ent.ShieldingEffectDelay then
-                    ent.ShieldingEffectDelay = CurTime()
+
+            if TimeLeft > 0.1 and ent.Armor then
+                if isnumber(ent:Armor()) then
+                    if not ent.ShieldingEffectDelay then
+                        ent.ShieldingEffectDelay = CurTime()
+                    end
+        
+                    if CurTime() >= ent.ShieldingEffectDelay then
+                        if ent.Armor and ent:Armor() > 0 then
+                            ent:SetArmor(math.min(ent:Armor() - dischAmount))
+                            ent.ShieldingEffectDelay = CurTime() + delay
+                        end
+                    end
+        
+                    if ent:Armor() <= 0 then
+                        ent:RemoveEffect("Discharge")
+                    end
                 end
-    
-                if CurTime() >= ent.ShieldingEffectDelay  then
-                    ent:SetArmor(math.min(ent:Armor() - dischAmount))
-                    ent.ShieldingEffectDelay = CurTime() + delay
-                end
-    
-                if ent:Armor() <= 0 then
-                    ent:RemoveEffect("Discharge")
-                end
-    
             end
         end,
         EffectEnd = function(ent)
             ent.DischargeEffectSound = nil
+        end,
+        DisplayFunction = function(ent)
+            local effectData = EffectData()
+            effectData:SetEntity(ent)
+            effectData:SetScale(0.1)
+            effectData:SetMagnitude(0.1)
+            util.Effect("TeslaHitboxes", effectData)
         end
     },
     Blindness = {
@@ -1045,6 +1087,12 @@ StatusEffects = {
                 ent:SprintDisable()
             end
         end,
+        EffectOnRemove = function(ent)
+            ent.FatigueEffectSound = nil
+            if ent:IsPlayer() then
+                ent:SprintEnable()
+            end
+        end
     },
     Vuln = {
         Icon = "SEF_Icons/vuln.png",
@@ -1218,70 +1266,24 @@ StatusEffects = {
         },
         ServerHooks = {},
     },
-    Freeze = { 
-        Icon = "SEF_Icons/frozen.png", -- Icon on HUD and displays
-        Desc = "You will become ice cube once you reach 10 stacks.", -- Description of your effect. Can be turned into a function that returns string.format() for dynamic description
-        Type = "DEBUFF", -- Type: BUFF or DEBUFF
-        Stackable = true, -- If your effect can obtain stacks
-        StackName = "Snowstacks", -- Optional name for your stacks
-        Effect = function(ent, time, inf)
-            if ent:GetSEFStacks("Freeze") >= 10 then
-                ent:RemoveEffect("Freeze")
-                ent:ClearSEFStacks("Freeze")
-                ent:ApplyEffect("IceCubed", 10, inf)
-            end
-        end, -- Effect on entity/player, function can be expanded by additional arguments
-        EffectEnd = function(ent, time)
-            ent:ClearSEFStacks("Freeze")
-        end
-    },
-    IceCubed = { 
-        Icon = "SEF_Icons/icecube.png", -- Icon on HUD and displays
-        Desc = "You are frozen.", -- Description of your effect. Can be turned into a function that returns string.format() for dynamic description
-        Type = "DEBUFF", -- Type: BUFF or DEBUFF
-        EffectBegin = function(ent, time) 
-            ent:SetMaterial("models/shiny")
-            ent:SetColor(Color(0, 217, 255))
-        end, -- Effect on entity/player, function can be expanded by additional arguments
-        Effect = function(ent, time, inf)
-            local TimeLeft = ent:GetTimeLeft("IceCubed")
-            if TimeLeft > 0.1 then
-
-                if not ent.IceCubedEffectDelay then
-                    ent.IceCubedEffectDelay  = CurTime()
-                end
-
-                local BleedDelay = 0.6
-
-                if CurTime() >= ent.IceCubedEffectDelay  then
-                    if IsValid(inf) then
-                        local dmg = DamageInfo()
-                        dmg:SetDamage(ent:GetMaxHealth() * 0.01)
-                        dmg:SetInflictor(inf)
-                        dmg:SetAttacker(inf)
-                        ent:TakeDamageInfo(dmg)
-                    else
-                        ent:TakeDamage(damageamount)
+    FallImm = {
+        Name = "Fall Immunity",
+        Icon = "SEF_Icons/fallimmune.png",
+        Desc = "You won't take fall damage.", 
+        Type = "BUFF",
+        ServerHooks = {
+            {
+                HookType = "EntityTakeDamage",
+                HookFunction = function(ent, dmg)
+                    if ent:HaveEffect("FallImm") then
+                        if dmg:IsFallDamage() then
+                            dmg:SetDamage(0)
+                        end
                     end
-                    ent.IceCubedEffectDelay = CurTime() + BleedDelay
-
-                    local DmgSound = {
-                        "weapons/Custom/impact/layer/kelvin_wpn_impact_01.wav",
-                        "weapons/Custom/impact/layer/kelvin_wpn_impact_02.wav",
-                        "weapons/Custom/impact/layer/kelvin_wpn_impact_03.wav",
-                        "weapons/Custom/impact/layer/kelvin_wpn_impact_04.wav",
-                    }
-
-                    local randomSound = DmgSound[math.random(#DmgSound)]
-                    ent:EmitSound(randomSound, 100, 140, 1, CHAN_AUTO)
-                end
-            end
-        end,
-        EffectEnd = function(ent, time)
-            ent:SetMaterial(nil)
-            ent:SetColor(Color(255, 255, 255))
-        end,
-    },
+                end,
+            },
+        },
+    }
     --[[
     Immortality = {
         Icon = "SEF_Icons/immortal.png",
