@@ -32,11 +32,11 @@ if CLIENT then
         shadow = true
     })
 
-    CreateClientConVar("SEF_StatusEffectX", 50, true, false, "X position of Status Effects applied on you.", 0, ScrW())
-    CreateClientConVar("SEF_StatusEffectY", 925, true, false, "Y position of Status Effects applied on you.", 0, ScrH())
+    CreateClientConVar("SEF_StatusEffectX", 5, true, false, "X position of Status Effects applied on you.", 0, ScrW())
+    CreateClientConVar("SEF_StatusEffectY", 35, true, false, "Y position of Status Effects applied on you.", 0, ScrH())
     CreateClientConVar("SEF_ScaleUI", 1, true, false, "Scale UI with this ConVar if you see it too small or too big", 0.1, math.huge)
     CreateClientConVar("SEF_StatusEffectDisplay", 0, true, false, "Shows effects on players/NPCS/Lambdas.", 0, 2)
-    CreateClientConVar("SEF_StatusEffectHUDStyle", 1, true, false, "Change style of Status Effects.", 0, 1)
+    CreateClientConVar("SEF_StatusEffectHUDStyle", 2, true, false, "Change style of Status Effects.", 0, 1)
     local ScaleUI
 
     local function SplitCamelCase(str)
