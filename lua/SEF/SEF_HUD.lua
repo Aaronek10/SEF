@@ -32,8 +32,8 @@ if CLIENT then
         shadow = true
     })
 
-    CreateClientConVar("SEF_StatusEffectX", 50, true, false, "X position of Status Effects applied on you.", 0, ScrW())
-    CreateClientConVar("SEF_StatusEffectY", 925, true, false, "Y position of Status Effects applied on you.", 0, ScrH())
+    CreateClientConVar("SEF_StatusEffectX", 50, true, false, "X position of Status Effects applied on you.", 0, 1920)
+    CreateClientConVar("SEF_StatusEffectY", 925, true, false, "Y position of Status Effects applied on you.", 0, 1080)
     CreateClientConVar("SEF_ScaleUI", 1, true, false, "Scale UI with this ConVar if you see it too small or too big", 0.1, math.huge)
     CreateClientConVar("SEF_StatusEffectDisplay", 0, true, false, "Shows effects on players/NPCS/Lambdas.", 0, 2)
     CreateClientConVar("SEF_StatusEffectHUDStyle", 1, true, false, "Change style of Status Effects.", 0, 2)
@@ -463,10 +463,10 @@ if CLIENT then
     
     local function DisplayStatusEffects()
             
-        local StatusEffX = GetConVar("SEF_StatusEffectX"):GetInt()
-        local StatusEffY = GetConVar("SEF_StatusEffectY"):GetInt()
-        local PassiveX = GetConVar("SEF_StatusEffectX"):GetInt()
-        local PassiveY = GetConVar("SEF_StatusEffectY"):GetInt() + 25
+        local StatusEffX = math.floor(GetConVar("SEF_StatusEffectX"):GetInt() * (ScrW()/1920))
+        local StatusEffY = math.floor(GetConVar("SEF_StatusEffectY"):GetInt() * (ScrH()/1080))
+        local PassiveX = math.floor(GetConVar("SEF_StatusEffectX"):GetInt() * (ScrW()/1920))
+        local PassiveY = math.floor((GetConVar("SEF_StatusEffectY"):GetInt() + 25) * (ScrH()/1080))
         local StatusEffectStyle = GetConVar("SEF_StatusEffectHUDStyle"):GetInt()
         local Margin = 20
 
