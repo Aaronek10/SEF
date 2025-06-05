@@ -958,7 +958,7 @@ StatusEffects = {
                     end
 
                     if damageamount > 0 then
-                        ent:EmitSound("npc/antlion_grub/squashed.wav", 100, math.random(70, 135), 1)
+                        ent:EmitSound("physics/flesh/flesh_impact_bullet2.wav", 100, math.random(70, 135), 1)
                     end
 
                     ent.PoisonEffectDelay = CurTime() + PoisonDelay
