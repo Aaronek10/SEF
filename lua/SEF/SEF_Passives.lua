@@ -44,6 +44,31 @@ PassiveEffects = {
                 end
             }
         }
-    }
+    },
 
+    PassiveTenacity = {
+        Icon = "icon32/tool.png",
+        Name = "Reletless",
+        Desc = "Debuffs applied to you have 50% reduced duration.",
+        ServerHooks = {
+            {
+                HookType = "Think",
+                HookFunction = function()
+                    for _, ent in ents.Iterator() do
+                        if not IsValid(ent) or not ent:IsPlayer() then continue end
+                        if ent:HavePassive("PassiveTenacity") then
+                            for effectName, effectData in pairs(EntActiveEffects[ent]) do
+                                if StatusEffects[effectName].Type == "DEBUFF" and not effectData.PassiveTenacityAffected then
+                                    local NewDuration = EntActiveEffects[ent][effectName].Duration * (1 - (50 / 100))
+                                    ent:ChangeDuration(effectName, NewDuration)
+                                    ent:EmitSound("resource/warning.wav", 110, 100, 1)
+                                    effectData.PassiveTenacityAffected = true
+                                end
+                            end
+                        end
+                    end
+                end
+            }
+        }
+    }
 }

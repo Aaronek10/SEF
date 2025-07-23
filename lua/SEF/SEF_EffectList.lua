@@ -28,7 +28,7 @@ StatusEffects = {
                 if not ent.HealingEffectDelay then
                     ent.HealingEffectDelay  = CurTime()
                 end
-                if CurTime() >= ent.HealingEffectDelay  then
+                if CurTime() >= ent.HealingEffectDelay then
                     ent:SetHealth(math.min(ent:Health() + healamount, ent:GetMaxHealth()))
                     ent.HealingEffectDelay = CurTime() + HealDelay
                 end
@@ -260,7 +260,6 @@ StatusEffects = {
                 HookFunction = function(target, dmginfo)
                     if target and target:HaveEffect("Endurance") then
                         dmginfo:ScaleDamage(target.EndurancePercent)
-                        print(target.EndurancePercent)
                         target:EmitSound("phx/epicmetal_hard.wav", 110, math.random(75, 125), 1)
                     end
                 end
@@ -557,6 +556,7 @@ StatusEffects = {
                         dmg:SetDamage(damageamount)
                         dmg:SetInflictor(inf)
                         dmg:SetAttacker(inf)
+                        dmg:SetDamageType(DMG_SLASH)
                         ent:TakeDamageInfo(dmg)
                     else
                         ent:TakeDamage(damageamount)
@@ -952,9 +952,15 @@ StatusEffects = {
                         dmg:SetDamage(damageamount)
                         dmg:SetInflictor(inf)
                         dmg:SetAttacker(inf)
+                        dmg:SetDamageType(DMG_ACID)
                         ent:TakeDamageInfo(dmg)
                     else
-                        ent:TakeDamage(damageamount)
+                        local dmg = DamageInfo()
+                        dmg:SetDamage(damageamount)
+                        dmg:SetInflictor(game.GetWorld())
+                        dmg:SetAttacker(game.GetWorld())
+                        dmg:SetDamageType(DMG_ACID)
+                        ent:TakeDamageInfo(dmg)
                     end
 
                     if damageamount > 0 then
@@ -1283,7 +1289,206 @@ StatusEffects = {
                 end,
             },
         },
+    },
+    Resilience = {
+        Name = "Resilience",
+        Icon = "SEF_Icons/resilience.png",
+        Desc = "If you are about to die: \n Get Deep Wound status effect and 75% Damage Reduction for 5 sec. \nRegain 25% of your max health.",
+        Type = "BUFF",
+        ServerHooks = {
+            {
+                HookType = "EntityTakeDamage",
+                HookFunction = function(ent, dmginfo)
+                    if not IsValid(ent) or not ent:IsPlayer() then return end
+                    if not ent:HaveEffect("Resilience") then return end
+
+                    local damage = dmginfo:GetDamage()
+                    local health = ent:Health()
+
+                    if damage >= health then
+                        dmginfo:SetDamage(0)
+                        local maxHealth = ent:GetMaxHealth()
+                        local healAmount = maxHealth * 0.25
+
+                        timer.Simple(0.1, function()
+                            if not IsValid(ent) then return end
+                            if not ent:Alive() then return end
+
+                            ent:SetHealth(healAmount)
+                            ent:ApplyEffect("DeepWound", math.huge)
+                            ent:ApplyEffect("Endurance", 5, 75)
+                            ent:EmitSound("npc/fast_zombie/claw_strike1.wav", 75, 100, 1, CHAN_BODY)
+                            ent:RemoveEffect("Resilience")
+                        end)
+                    end
+                end,
+            },
+        },
+    },
+    DeepWound = {
+        Name = "Deep Wound",
+        Icon = "SEF_Icons/deepwound.png",
+        Desc = "Lose 1% of your max health each 0.5 sec. when not moving. \n Healing buff or having health above 25% will remove this effect. \n\n Resilience can't be applied while Deep Wound is active.",
+        Type = "DEBUFF",
+        Effect = function(ent, time)
+            local TimeLeft = ent:GetTimeLeft("DeepWound")
+            if TimeLeft > 0.1 then
+                if not ent.DeepWoundEffectDelay then
+                    ent.DeepWoundEffectDelay = CurTime()
+                end
+
+                if ent:HaveEffect("Resilience") then
+                    ent:RemoveEffect("Resilience")
+                end
+
+                if ent:GetVelocity():LengthSqr() > 0 then
+                    ent.DeepWoundEffectDelay = CurTime() + 0.5
+                else
+                    if CurTime() >= ent.DeepWoundEffectDelay then
+                        local maxHealth = ent:GetMaxHealth()
+                        local damageAmount = maxHealth * 0.01  -- 1% of max health
+                        ent:SetHealth(math.max(ent:Health() - damageAmount, 0))
+                        ent.DeepWoundEffectDelay = CurTime() + 0.5
+
+                        if ent:Health() <= 0 then
+                            if ent:IsPlayer() then
+                                ent:Kill()
+                            elseif ent:IsNPC() then
+                                ent:TakeDamage(1)
+                            end
+                        end
+                    end
+                end
+
+                if (ent:IsPlayer() and ent:Alive()) and (ent:HaveEffect("Healing") or ent:Health() > ent:GetMaxHealth() * 0.25) then
+                    ent:SoftRemoveEffect("DeepWound")
+                elseif ent:IsNPC() and (ent:Health() > ent:GetMaxHealth() * 0.25 or ent:HaveEffect("Healing")) then
+                    ent:SoftRemoveEffect("DeepWound")
+                end
+
+            end
+        end,
+        DisplayFunction = function(ent)
+            if ent:IsValid() then
+                local emitter = ParticleEmitter(ent:GetPos())
+
+                if not ent.DeepWoundParticleTime then
+                    ent.DeepWoundParticleTime = CurTime()
+                end
+
+                if emitter then
+                    local distance = math.Rand(0, 25)
+                    local particlePos = ent:WorldSpaceCenter() + Vector(math.Rand(-distance, distance), math.Rand(-distance, distance), 0)
+                    local particle = emitter:Add(Material("effects/splash4"), particlePos)
+                    if particle and CurTime() >= ent.DeepWoundParticleTime + 0.1 then
+                        particle:SetLifeTime(0)
+                        particle:SetDieTime(math.random(10, 20))
+                        particle:SetStartAlpha(255)
+                        particle:SetEndAlpha(0)
+                        particle:SetStartSize(10)
+                        particle:SetEndSize(0)
+                        particle:SetColor(255, 0, 0)
+                        particle:SetGravity(Vector(0, 0, -800))
+                        particle:SetAngleVelocity(Angle(math.random(-25, 25), 0, 0))
+                        particle:SetCollide(true)
+                        particle:SetCollideCallback(function(particle, hitpos, hitnormal)
+                            local dropsounds = {
+                                "ambient/water/rain_drip1.wav",
+                                "ambient/water/rain_drip2.wav",
+                                "ambient/water/rain_drip3.wav",
+                                "ambient/water/rain_drip4.wav"
+                            }
+                            EmitSound(dropsounds[math.random(#dropsounds)], hitpos, 0, CHAN_AUTO, 0.1, 100)
+                        end)
+                        ent.DeepWoundParticleTime = CurTime()
+                    end
+        
+                    emitter:Finish()
+                end
+            end
+        end,
+        EffectEnd = function(ent)
+            ent:EmitSound("Haste.mp3", 75, 100, 1, CHAN_VOICE)
+        end,
+        ClientHooks = {
+            {
+                HookType = "HUDPaintBackground",
+                HookFunction = function()
+                    local ply = LocalPlayer()
+                    local DeepWoundMat = Material("SEF_Overlay/DeepWound.png")
+            
+                    if ply:HaveEffect("DeepWound") then
+                        local alpha = 255
+            
+                        surface.SetMaterial(DeepWoundMat)
+                        surface.SetDrawColor(255, 255, 255, alpha)
+                        surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
+
+                        if not ply.HeartBeatDeepWoundSound then
+                            ply:EmitSound("player/heartbeat1.wav", 100, 100, 1, CHAN_STATIC)
+                            ply.HeartBeatDeepWoundSound = true
+                        end
+                    else
+                        if ply.HeartBeatDeepWoundSound then
+                            ply:StopSound("player/heartbeat1.wav")
+                            ply.HeartBeatDeepWoundSound = nil
+                        end
+                    end
+                end
+            }
+        }
+    },
+    DamageUp = {
+        Name = "Damage Increase Buff",
+        Icon = "SEF_Icons/dmg-up.png",
+        Desc = function(dmgup)
+            return string.format("You are dealing %d%% more damage.", dmgup)
+        end,
+        Type = "BUFF",
+        Stackable = true,
+        StackName = "+ % DMG",
+        EffectBegin = function(ent, dmgup)
+            ent:SetSEFStacks("DamageUp", dmgup)
+        end,
+        ServerHooks = {
+            {
+                HookType = "EntityTakeDamage",
+                HookFunction = function(target, dmginfo)
+                    local attacker = dmginfo:GetAttacker()
+                    if target and target ~= attacker and (target:IsNPC() or target:IsPlayer() or target:IsNextBot()) and attacker:HaveEffect("DamageUp") then
+                        local dmgup = attacker:GetSEFStacks("DamageUp") or 0
+                        dmginfo:ScaleDamage(1 + (dmgup / 100))
+                    end
+                end
+            }
+        },
+    },
+    DamageDown = {
+        Name = "Damage Decrease Debuff",
+        Icon = "SEF_Icons/dmg-down.png",
+        Desc = function(dmgdown)
+            return string.format("You are dealing %d%% less damage.", dmgdown)
+        end,
+        Type = "DEBUFF",
+        Stackable = true,
+        StackName = "- % DMG",
+        EffectBegin = function(ent, dmgdown)
+            ent:SetSEFStacks("DamageDown", dmgdown)
+        end,
+        ServerHooks = {
+            {
+                HookType = "EntityTakeDamage",
+                HookFunction = function(target, dmginfo)
+                    local attacker = dmginfo:GetAttacker()
+                    if target and target ~= attacker and (target:IsNPC() or target:IsPlayer() or target:IsNextBot()) and attacker:HaveEffect("DamageDown") then
+                        local dmgdown = attacker:GetSEFStacks("DamageDown") or 0
+                        dmginfo:ScaleDamage(1 - (dmgdown / 100))
+                    end
+                end
+            }
+        },
     }
+
     --[[
     Immortality = {
         Icon = "SEF_Icons/immortal.png",
