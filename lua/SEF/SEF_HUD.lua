@@ -406,8 +406,8 @@ if CLIENT then
         local TotalWidth = math.max(NameW, DescW)
         local TotalHeight = (NameH + DescH)
         local StackAmount
-        if PlayerPassiveStacks[effectName] then
-            StackAmount = PlayerEffectStacks[effectName]
+        if PlayerPassiveStacks[passiveName] then
+            StackAmount = PlayerPassiveStacks[passiveName]
             if effect.StackName then
                 StackName = tostring(effect.StackName)
             else
@@ -643,58 +643,74 @@ if CLIENT then
     end
     
 
+    net.Receive("SEF_EffectData", function()
+        local action = net.ReadString()
+        local effectType = net.ReadString()
 
-    net.Receive("SEF_AddEffect", function()
-        local EffectName = net.ReadString()
-        local Desc = net.ReadString()
-        local Duration = net.ReadFloat()
-        local StartTime = CurTime()
+        if effectType == "Effect" then
+            local effectName = net.ReadString()
 
-        local StatusEntry = {
-            EffectName = EffectName,
-            Desc = Desc,
-            Duration = Duration,
-            StartTime = StartTime
-        }
+            if action == "Add" then
+                local desc = net.ReadString()
+                local duration = net.ReadFloat()
+                local startTime = CurTime()
 
-        ActiveEffects[EffectName] = StatusEntry
-    end)
+                ActiveEffects[effectName] = {
+                    EffectName = effectName,
+                    Desc = desc,
+                    Duration = duration,
+                    StartTime = startTime
+                }
+            elseif action == "Remove" then
+                ActiveEffects[effectName] = nil
+            end
 
-    net.Receive("SEF_RemoveEffect", function()
-        local EffectName = net.ReadString()
-        ActiveEffects[EffectName] = nil
-    end)
-    
+        elseif effectType == "Passive" then
+            local passiveName = net.ReadString()
 
-    net.Receive("SEF_EntityAdd", function()
-        local Ent = net.ReadEntity()
-        local EffectName = net.ReadString()
-        local Duration = net.ReadFloat()
-        local TimeApply = net.ReadFloat()
+            if action == "Add" then
+                local desc = net.ReadString()
 
-        if not AllEntEffects[Ent] then
-            AllEntEffects[Ent] = {}
-        end
+                ActivePassives[passiveName] = {
+                    PassiveName = passiveName,
+                    PassiveDesc = desc
+                }
 
-        AllEntEffects[Ent][EffectName] = {
-            Duration = Duration,
-            StartTime = TimeApply
-        }
-    end)
-
-    net.Receive("SEF_EntityRemove", function()
-        local Ent = net.ReadEntity()
-        local EffectName = net.ReadString()
-
-        if AllEntEffects[Ent] and AllEntEffects[Ent][EffectName] then
-            AllEntEffects[Ent][EffectName] = nil
-            
-            -- Usuń podtabelę jeśli nie ma już żadnych efektów
-            if next(AllEntEffects[Ent]) == nil then
-                AllEntEffects[Ent] = nil
+            elseif action == "Remove" then
+                ActivePassives[passiveName] = nil
             end
         end
     end)
+
+
+    net.Receive("SEF_EntityData", function()
+        local action = net.ReadString()    -- "Add" lub "Remove"
+        local ent = net.ReadEntity()
+        local effectName = net.ReadString()
+
+        if not IsValid(ent) then return end
+
+        if action == "Add" then
+            local duration = net.ReadFloat()
+            local startTime = net.ReadFloat()
+
+            AllEntEffects[ent] = AllEntEffects[ent] or {}
+            AllEntEffects[ent][effectName] = {
+                Duration = duration,
+                StartTime = startTime
+            }
+        elseif action == "Remove" then
+            if AllEntEffects[ent] then
+                AllEntEffects[ent][effectName] = nil
+                if next(AllEntEffects[ent]) == nil then
+                    AllEntEffects[ent] = nil
+                end
+            end
+        else
+            print("[SEF] Nieznana akcja w SEF_EntityData:", action)
+        end
+    end)
+
 
     net.Receive("SEF_UpdateData", function()
         local Ent = net.ReadEntity()
@@ -710,27 +726,6 @@ if CLIENT then
                 ActiveEffects[EffectName].Duration = ChangedTime
             end
         end
-    end)
-
-    net.Receive("SEF_AddPassive", function() 
-
-        local PassiveName = net.ReadString()
-        local PassiveDesc = net.ReadString()
-        
-        local PassiveEntry = {
-            PassiveName = PassiveName,
-            PassiveDesc = PassiveDesc
-        }
-
-        ActivePassives[PassiveName] = PassiveDesc
-    
-    end)
-
-    net.Receive("SEF_RemovePassive", function() 
-    
-        local PassiveName = net.ReadString()
-        ActivePassives[PassiveName] = nil
-    
     end)
 
     net.Receive("SEF_StackSystem", function() 

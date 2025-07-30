@@ -1,13 +1,9 @@
 if SERVER then
 
-    util.AddNetworkString("SEF_AddEffect")
-    util.AddNetworkString("SEF_RemoveEffect")
-    util.AddNetworkString("SEF_EntityAdd")
-    util.AddNetworkString("SEF_EntityRemove")
+    util.AddNetworkString("SEF_EffectData")
+    util.AddNetworkString("SEF_EntityData")
     util.AddNetworkString("SEF_UpdateData")
     util.AddNetworkString("SEF_UpdateDesc")
-    util.AddNetworkString("SEF_AddPassive")
-    util.AddNetworkString("SEF_RemovePassive")
     util.AddNetworkString("SEF_StackSystem")
 
     CreateConVar("SEF_LoggingMode", 0, FCVAR_NONE, "Enable displaying logs of SEF", 0, 1)
@@ -68,14 +64,17 @@ if SERVER then
             end
     
             if self:IsPlayer() then
-                net.Start("SEF_AddEffect")
-                net.WriteString(effectName)
-                net.WriteString(DynDesc)
-                net.WriteFloat(time)
+                net.Start("SEF_EffectData")
+                    net.WriteString("Add")
+                    net.WriteString("Effect")
+                    net.WriteString(effectName)
+                    net.WriteString(DynDesc)
+                    net.WriteFloat(time)
                 net.Send(self)
             end
     
-            net.Start("SEF_EntityAdd")
+            net.Start("SEF_EntityData")
+            net.WriteString("Add")
             net.WriteEntity(self)
             net.WriteString(effectName)
             net.WriteFloat(time)
@@ -122,12 +121,16 @@ if SERVER then
             end
 
             if self:IsPlayer() then
-                net.Start("SEF_RemoveEffect")
-                net.WriteString(effectName)
+                net.Start("SEF_EffectData")
+                    net.WriteString("Remove") 
+                    net.WriteString("Effect")
+                    net.WriteString(effectName)
                 net.Send(self)
+
             end
 
-            net.Start("SEF_EntityRemove")
+            net.Start("SEF_EntityData")
+            net.WriteString("Remove")
             net.WriteEntity(self)
             net.WriteString(effectName)
             net.Broadcast()
@@ -166,9 +169,11 @@ if SERVER then
 
 
             if self:IsPlayer() then
-                net.Start("SEF_AddPassive")
-                net.WriteString(effectName)
-                net.WriteString(DynDesc)
+                net.Start("SEF_EffectData")
+                    net.WriteString("Add")
+                    net.WriteString("Passive") 
+                    net.WriteString(passiveName) 
+                    net.WriteString(DynDesc)
                 net.Send(self)
             end
 
@@ -189,8 +194,10 @@ if SERVER then
             end
 
             if self:IsPlayer() then
-                net.Start("SEF_RemovePassive")
-                net.WriteString(effectName)
+                net.Start("SEF_EffectData")
+                    net.WriteString("Remove") 
+                    net.WriteString("Passive") 
+                    net.WriteString(passiveName)  
                 net.Send(self)
             end
         else
@@ -257,11 +264,34 @@ if SERVER then
             net.WriteString(effectName)
             net.WriteFloat(time)
             net.Broadcast()
-            net.Abort()
         end
     end
 
     // BASE STATS FUNCTIONS
+
+    local statFunctions = {
+        MaxHealth = { 
+            get = function(ent) return ent:GetMaxHealth() end, 
+            set = function(ent, val) ent:SetMaxHealth(val) end 
+        },
+        MaxArmor = { 
+            get = function(ent) return ent.GetMaxArmor and ent:GetMaxArmor() or 0 end,
+            set = function(ent, val) if ent.SetMaxArmor then ent:SetMaxArmor(val) end end 
+        },
+        WalkSpeed = { 
+            get = function(ent) return ent.GetWalkSpeed and ent:GetWalkSpeed() or 0 end,
+            set = function(ent, val) if ent.SetWalkSpeed then ent:SetWalkSpeed(val) end end 
+        },
+        RunSpeed = { 
+            get = function(ent) return ent.GetRunSpeed and ent:GetRunSpeed() or 0 end,
+            set = function(ent, val) if ent.SetRunSpeed then ent:SetRunSpeed(val) end end 
+        },
+        JumpPower = { 
+            get = function(ent) return ent.GetJumpPower and ent:GetJumpPower() or 0 end,
+            set = function(ent, val) if ent.SetJumpPower then ent:SetJumpPower(val) end end 
+        },
+    }
+
 
     local function InitEntityBaseStats(ent)
         EntBaseStats[ent] = {
@@ -275,70 +305,52 @@ if SERVER then
 
 
     function BaseStatAdd(ent, stat, value)
-        local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
-        if stat == "MaxHealth" then
-            ent:SetMaxHealth(ent:GetMaxHealth() + value)
-        elseif stat == "MaxArmor" then
-            ent:SetMaxArmor(ent:GetMaxArmor() + value)
-        elseif stat == "WalkSpeed" then
-            ent:SetWalkSpeed(ent:GetWalkSpeed() + value)
-        elseif stat == "RunSpeed" then
-            ent:SetRunSpeed(ent:GetRunSpeed() + value)
-        elseif stat == "JumpPower" then
-            ent:SetJumpPower(ent:GetJumpPower() + value)
-        end
-        if SEF_LoggingMode:GetBool() then
+        local funcs = statFunctions[stat]
+        if not funcs then return end
+
+        local current = funcs.get(ent)
+        funcs.set(ent, current + value)
+
+        if GetConVar("SEF_LoggingMode"):GetBool() then
             print("[BaseStats System] Added " .. value .. " to statistic: " .. stat .. " on entity: " .. tostring(ent))
         end
     end
-    
+
     function BaseStatRemove(ent, stat, value)
-        local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
-        if stat == "MaxHealth" then
-            ent:SetMaxHealth(ent:GetMaxHealth() - value)
-        elseif stat == "MaxArmor" then
-            ent:SetMaxArmor(ent:GetMaxArmor() - value)
-        elseif stat == "WalkSpeed" then
-            ent:SetWalkSpeed(ent:GetWalkSpeed() - value)
-        elseif stat == "RunSpeed" then
-            ent:SetRunSpeed(ent:GetRunSpeed() - value)
-        elseif stat == "JumpPower" then
-            ent:SetJumpPower(ent:GetJumpPower() - value)
-        end
-        if SEF_LoggingMode:GetBool() then
+        local funcs = statFunctions[stat]
+        if not funcs then return end
+
+        local current = funcs.get(ent)
+        funcs.set(ent, current - value)
+
+        if GetConVar("SEF_LoggingMode"):GetBool() then
             print("[BaseStats System] Removed " .. value .. " from statistic: " .. stat .. " on entity: " .. tostring(ent))
         end
     end
-    
+
     function BaseStatReset(ent, stat)
-        local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
-        if stat == "MaxHealth" then
-            ent:SetMaxHealth(EntBaseStats[ent].MaxHealth)
-        elseif stat == "MaxArmor" then
-            ent:SetMaxArmor(EntBaseStats[ent].MaxArmor)
-        elseif stat == "WalkSpeed" then
-            ent:SetWalkSpeed(EntBaseStats[ent].WalkSpeed)
-        elseif stat == "RunSpeed" then
-            ent:SetRunSpeed(EntBaseStats[ent].RunSpeed)
-        elseif stat == "JumpPower" then
-            ent:SetJumpPower(EntBaseStats[ent].JumpPower)
-        end
-        if SEF_LoggingMode:GetBool() then
+        local funcs = statFunctions[stat]
+        if not funcs or not EntBaseStats[ent] then return end
+
+        funcs.set(ent, EntBaseStats[ent][stat])
+
+        if GetConVar("SEF_LoggingMode"):GetBool() then
             print("[BaseStats System] Statistic " .. stat .. " has been reset on entity: " .. tostring(ent))
         end
     end
 
     function BaseStatResetAll(ent)
-        local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
-        ent:SetMaxHealth(EntBaseStats[ent].MaxHealth)
-        if ent.GetMaxArmor and ent:GetMaxArmor() then ent:SetMaxArmor(EntBaseStats[ent].MaxArmor) end
-        if ent.GetWalkSpeed and ent:GetWalkSpeed() then ent:SetWalkSpeed(EntBaseStats[ent].WalkSpeed) end
-        if ent.GetRunSpeed and ent:GetRunSpeed() then ent:SetRunSpeed(EntBaseStats[ent].RunSpeed) end
-        if ent.GetJumpPower and ent.SetJumpPower and ent:GetJumpPower() then ent:SetJumpPower(EntBaseStats[ent].JumpPower) end
-        if SEF_LoggingMode:GetBool() then
-            print("[BaseStats System] All Statistics has been reset on entity: " .. tostring(ent))
+        if not EntBaseStats[ent] then return end
+
+        for stat, funcs in pairs(statFunctions) do
+            funcs.set(ent, EntBaseStats[ent][stat])
+        end
+
+        if GetConVar("SEF_LoggingMode"):GetBool() then
+            print("[BaseStats System] All Statistics have been reset on entity: " .. tostring(ent))
         end
     end
+
 
     // STACK SYSTEM FUNCTIONS
 
@@ -542,29 +554,39 @@ if SERVER then
         end
     end
     
+    local function InitializeForEnt(ent)
+        if not IsValid(ent) then return end
+        if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
+            if not EntBaseStats[ent] then
+                InitEntityBaseStats(ent)
+                if GetConVar("SEF_LoggingMode"):GetBool() then
+                    PrintMessage(HUD_PRINTTALK, "Created Base Stats for: " .. tostring(ent))
+                end
+            end
+        end
+    end
+
+    hook.Add("OnEntityCreated", "InitBaseStatsOnSpawn", function(ent)
+        timer.Simple(0, function()
+            InitializeForEnt(ent)
+        end)
+    end)
+
     hook.Add("EntityRemoved", "RemoveEntityBaseStats", function(ent)
-        local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
         if EntBaseStats[ent] then
             EntBaseStats[ent] = nil
-            if SEF_LoggingMode:GetBool() then
+            if GetConVar("SEF_LoggingMode"):GetBool() then
                 PrintMessage(HUD_PRINTTALK, "Removed Base Stats for: " .. tostring(ent))
             end
         end
     end)
 
-    hook.Add("Think", "InitBaseStatsSEF", function()
-        local SEF_LoggingMode = GetConVar("SEF_LoggingMode") 
+    timer.Simple(5, function()
         for _, ent in ipairs(ents.GetAll()) do
-            if ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot() then
-                if not EntBaseStats[ent] then
-                    InitEntityBaseStats(ent)
-                    if SEF_LoggingMode:GetBool() then
-                        PrintMessage(HUD_PRINTTALK, "Created Base Stats for: " .. tostring(ent))
-                    end
-                end
-            end
+            InitializeForEnt(ent)
         end
     end)
+
 
 
     local function FindPlayerByName(name)
