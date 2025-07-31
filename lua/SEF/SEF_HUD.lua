@@ -381,9 +381,11 @@ if CLIENT then
     end
     
 
-    local function DrawActivePassive(x, y, passiveName, passiveDesc)
-        local effect = PassiveEffects[passiveName]
-        if not effect then return end
+	local function DrawActivePassive(x, y, passiveName, passiveDesc)
+
+		local effect = PassiveEffects[passiveName]
+
+		if not effect then return end
     
         local mouseX = gui.MouseX()
         local mouseY = gui.MouseY()
@@ -495,13 +497,13 @@ if CLIENT then
 
         end
 
-        for passiveName, passiveData in pairs(ActivePassives) do
-            
-            DrawActivePassive(PassiveX, PassiveY - 75, passiveName, passiveData)
+		for passiveName, passiveData in pairs(ActivePassives) do
 
-            PassiveX = PassiveX + 50
+			DrawActivePassive(PassiveX, PassiveY - 75, passiveName, passiveData.PassiveDesc)
 
-        end
+			PassiveX = PassiveX + 50
+
+		end
 
     end
 

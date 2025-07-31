@@ -141,48 +141,45 @@ if SERVER then
         end
     end
 
-    function ENTITY:ApplyPassive(effectName)
-        local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
-        local effect = PassiveEffects[effectName]
-        if effect and (self:IsPlayer() or self:IsNPC() or self:IsNextBot()) then
+	function ENTITY:ApplyPassive(effectName)
+		local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
+		local effect = PassiveEffects[effectName]
+		if effect and (self:IsPlayer() or self:IsNPC() or self:IsNextBot()) then
 
-            
+			if not EntActivePassives[self] then
+				if SEF_LoggingMode:GetBool() then
+					print("[Status Effect Framework] Passives Effect Table created for entity:", self)
+				end
+				EntActivePassives[self] = {}
+			end
 
-            if not EntActivePassives[self] then
-                if SEF_LoggingMode:GetBool() then
-                    print("[Status Effect Framework] Passives Effect Table created for entity:", self)
-                end
-                EntActivePassives[self] = {}
-            end
+			if not EntActivePassives[self][effectName] then
+				if SEF_LoggingMode:GetBool() then
+					print("[Status Effect Framework] Applied Passive Effect:", effectName, "to entity:", self)
+				end
+			end
 
-            if not EntActivePassives[self][effectName] then
-                if SEF_LoggingMode:GetBool() then
-                    print("[Status Effect Framework] Applied Passive Effect:", effectName, "to entity:", self)
-                end
-            end
+			EntActivePassives[self][effectName] = {
+				Function = effect.Effect,
+			}
 
-            EntActivePassives[self][effectName] = {
-                Function = effect.Effect,
-            }
+			local DynDesc = effect.Desc
 
-            local DynDesc = effect.Desc
+			if self:IsPlayer() then
+				net.Start("SEF_EffectData")
+					net.WriteString("Add")
+					net.WriteString("Passive") 
+					net.WriteString(effectName)
+					net.WriteString(DynDesc or "")
+				net.Send(self)
+			end
+		else
+			if SEF_LoggingMode:GetBool() then
+				print("[Status Effect Framework] Passive not found")
+			end
+		end
+	end
 
-
-            if self:IsPlayer() then
-                net.Start("SEF_EffectData")
-                    net.WriteString("Add")
-                    net.WriteString("Passive") 
-                    net.WriteString(passiveName) 
-                    net.WriteString(DynDesc)
-                net.Send(self)
-            end
-
-        else
-            if SEF_LoggingMode:GetBool() then
-                print("[Status Effect Framework] Passive not found")
-            end
-        end
-    end
     
     function ENTITY:RemovePassive(effectName)
         local SEF_LoggingMode = GetConVar("SEF_LoggingMode")
