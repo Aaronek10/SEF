@@ -211,21 +211,27 @@ if SERVER then
             if SEF_LoggingMode:GetBool() then
                 print("[Status Effect Framework] Softremoved Effect", effectName, "from entity:", self)
             end
+
+            -- Soft-remove = ustaw czas na 1 sekundę, od teraz
             EntActiveEffects[self][effectName].Duration = 1
 
+            -- Wyślij do gracza update z nowym czasem trwania
             if self:IsPlayer() then
-                net.Start("SEF_AddEffect")
-                net.WriteString(effectName)
-                net.WriteString("Effect is wearing off.")
-                net.WriteFloat(2)
+                net.Start("SEF_EffectData")
+                    net.WriteString("Add")
+                    net.WriteString("Effect")
+                    net.WriteString(effectName)
+                    net.WriteString("Effect is wearing off.")
+                    net.WriteFloat(1) 
                 net.Send(self)
             end
 
-            net.Start("SEF_EntityAdd")
-            net.WriteEntity(self)
-            net.WriteString(effectName)
-            net.WriteFloat(1)
-            net.WriteFloat(CurTime())
+            net.Start("SEF_EntityData")
+                net.WriteString("Add")
+                net.WriteEntity(self)
+                net.WriteString(effectName)
+                net.WriteFloat(1)
+                net.WriteFloat(EntActiveEffects[self][effectName].StartTime)
             net.Broadcast()
         else
             if SEF_LoggingMode:GetBool() then
@@ -233,6 +239,7 @@ if SERVER then
             end
         end
     end
+
 
     function ENTITY:HaveEffect(effectName)
         if EntActiveEffects[self] and EntActiveEffects[self][effectName] then
