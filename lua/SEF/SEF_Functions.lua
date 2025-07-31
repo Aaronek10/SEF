@@ -194,7 +194,7 @@ if SERVER then
                 net.Start("SEF_EffectData")
                     net.WriteString("Remove") 
                     net.WriteString("Passive") 
-                    net.WriteString(passiveName)  
+                    net.WriteString(effectName)  
                 net.Send(self)
             end
         else
