@@ -14,6 +14,8 @@ if CLIENT then
         Square = Material("SEF_Icons/PassiveSquare.png")
     }
 
+    local ToolTipData = {}
+
     surface.CreateFont("SEFFont", {
         font = "Stratum2 Md",
         size = 20,
@@ -36,7 +38,7 @@ if CLIENT then
     CreateClientConVar("SEF_StatusEffectY", 925, true, false, "Y position of Status Effects applied on you.", 0, 1080)
     CreateClientConVar("SEF_ScaleUI", 1, true, false, "Scale UI with this ConVar if you see it too small or too big", 0.1, math.huge)
     CreateClientConVar("SEF_StatusEffectDisplay", 0, true, false, "Shows effects on players/NPCS/Lambdas.", 0, 2)
-    CreateClientConVar("SEF_StatusEffectHUDStyle", 1, true, false, "Change style of Status Effects.", -1, 2)
+    CreateClientConVar("SEF_StatusEffectHUDStyle", 1, true, false, "Change style of Status Effects.", -1, 3)
     local ScaleUI
 
     local function SplitCamelCase(str)
@@ -64,36 +66,31 @@ if CLIENT then
         surface.SetFont("SEFFont")
     
         local FormattedName = effect.Name or SplitCamelCase(effectName)
-    
         local NameW, NameH = surface.GetTextSize(FormattedName)
+
         local DescW, DescH = 0, 0
         if effectDesc and effectDesc ~= "" then
             DescW, DescH = surface.GetTextSize(effectDesc)
         end
+
         local DurW, DurH = surface.GetTextSize("Duration: " .. duration .. " seconds")
         local TotalWidth = math.max(NameW, DurW, DescW)
         local TotalHeight = NameH + DurH + DescH
-        local StackAmount
-        local StackName
-        local StackWidth, StackHeight
-        local StackNumberWidth, StackNumberHeight
-        if PlayerEffectStacks[effectName] then
-            StackAmount = PlayerEffectStacks[effectName]
-            if effect.StackName then
-                StackName = tostring(effect.StackName)
-            else
-                StackName = "Stacks"
-            end
+
+        local StackAmount = PlayerEffectStacks[effectName] or 0
+        local StackName = (StackAmount > 0) and (effect.StackName or "Stacks") or nil
+
+        local StackWidth, StackHeight, StackNumberWidth, StackNumberHeight = nil, nil, nil, nil
+        if StackName then
             StackWidth, StackHeight = surface.GetTextSize(StackName)
-            StackNumberWidth, StackNumberHeight = surface.GetTextSize(StackAmount)
-        else
-            StackAmount = 0
-            StackName = nil
-            StackWidth, StackHeight = nil
-            StackNumberWidth, StackNumberHeight = nil
+            StackNumberWidth, StackNumberHeight = surface.GetTextSize(tostring(StackAmount))
         end
     
-        local icon = Material(effect.Icon)
+        if not CachedMaterials[effect] then
+            CachedMaterials[effect] = Material(effect.Icon)
+        end
+
+        local icon = CachedMaterials[effect]
     
         -- Oblicz upływ czasu
         local elapsedTime = CurTime() - startTime
@@ -199,30 +196,31 @@ if CLIENT then
         surface.SetFont("SEFFont")
     
         local FormattedName = effect.Name or SplitCamelCase(effectName)
-    
         local NameW, NameH = surface.GetTextSize(FormattedName)
+
         local DescW, DescH = 0, 0
         if effectDesc and effectDesc ~= "" then
             DescW, DescH = surface.GetTextSize(effectDesc)
         end
+
         local DurW, DurH = surface.GetTextSize("Duration: " .. duration .. " seconds")
         local TotalWidth = math.max(NameW, DurW, DescW)
         local TotalHeight = NameH + DurH + DescH
-        local StackAmount
-        local StackName
-        local StackWidth, StackHeight
-        local StackNumberWidth, StackNumberHeight
-        if PlayerEffectStacks[effectName] then
-            StackAmount = PlayerEffectStacks[effectName]
-            StackName = effect.StackName or "Stacks"
+
+        local StackAmount = PlayerEffectStacks[effectName] or 0
+        local StackName = (StackAmount > 0) and (effect.StackName or "Stacks") or nil
+
+        local StackWidth, StackHeight, StackNumberWidth, StackNumberHeight = nil, nil, nil, nil
+        if StackName then
             StackWidth, StackHeight = surface.GetTextSize(StackName)
-            StackNumberWidth, StackNumberHeight = surface.GetTextSize(StackAmount)
-        else
-            StackAmount, StackName, StackWidth, StackHeight = 0, nil, nil, nil
-            StackNumberWidth, StackNumberHeight = nil
+            StackNumberWidth, StackNumberHeight = surface.GetTextSize(tostring(StackAmount))
         end
     
-        local icon = Material(effect.Icon)
+        if not CachedMaterials[effect] then
+            CachedMaterials[effect] = Material(effect.Icon)
+        end
+
+        local icon = CachedMaterials[effect]
     
         local TextColor, BarColor
         if effect.Type == "BUFF" then
@@ -295,30 +293,31 @@ if CLIENT then
         surface.SetFont("SEFFont")
     
         local FormattedName = effect.Name or SplitCamelCase(effectName)
-    
         local NameW, NameH = surface.GetTextSize(FormattedName)
+
         local DescW, DescH = 0, 0
         if effectDesc and effectDesc ~= "" then
             DescW, DescH = surface.GetTextSize(effectDesc)
         end
+
         local DurW, DurH = surface.GetTextSize("Duration: " .. duration .. " seconds")
         local TotalWidth = math.max(NameW, DurW, DescW)
         local TotalHeight = NameH + DurH + DescH
-        local StackAmount
-        local StackName
-        local StackWidth, StackHeight
-        local StackNumberWidth, StackNumberHeight
-        if PlayerEffectStacks[effectName] then
-            StackAmount = PlayerEffectStacks[effectName]
-            StackName = effect.StackName or "Stacks"
+
+        local StackAmount = PlayerEffectStacks[effectName] or 0
+        local StackName = (StackAmount > 0) and (effect.StackName or "Stacks") or nil
+
+        local StackWidth, StackHeight, StackNumberWidth, StackNumberHeight = nil, nil, nil, nil
+        if StackName then
             StackWidth, StackHeight = surface.GetTextSize(StackName)
-            StackNumberWidth, StackNumberHeight = surface.GetTextSize(StackAmount)
-        else
-            StackAmount, StackName, StackWidth, StackHeight = 0, nil, nil, nil
-            StackNumberWidth, StackNumberHeight = nil
+            StackNumberWidth, StackNumberHeight = surface.GetTextSize(tostring(StackAmount))
         end
     
-        local icon = Material(effect.Icon)
+        if not CachedMaterials[effect] then
+            CachedMaterials[effect] = Material(effect.Icon)
+        end
+
+        local icon = CachedMaterials[effect]
     
         local TextColor, BarColor
         if effect.Type == "BUFF" then
@@ -428,7 +427,11 @@ if CLIENT then
         if centerX + halfIconSize > ScrW() then centerX = ScrW() - halfIconSize end
         if centerY + halfIconSize > ScrH() then centerY = ScrH() - halfIconSize end
     
-        local icon = Material(effect.Icon)
+        if not CachedMaterials[effect] then
+            CachedMaterials[effect] = Material(effect.Icon)
+        end
+
+        local icon = CachedMaterials[effect]
     
         -- Rysowanie tła ikony
         surface.SetDrawColor(80, 80, 80)
@@ -453,6 +456,120 @@ if CLIENT then
             if DescH > 0 then
                 draw.DrawText(passiveDesc, "SEFFont", mouseX + 5, mouseY + 45 + NameH, TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
             end
+        end
+    end
+
+    local function DrawCircularStatusEffectTimer(x, y, effectName, effectDesc, duration, startTime)
+        local effect = StatusEffects[effectName]
+        if not effect then return end
+
+        local mouseX = gui.MouseX()
+        local mouseY = gui.MouseY()
+        ScaleUI = GetConVar("SEF_ScaleUI"):GetFloat()
+
+        local centerX = x * ScaleUI
+        local centerY = y * ScaleUI
+        local radius = 22 * ScaleUI
+        local RadiusThickness = 5 * ScaleUI
+        local InnerRadiusThickness = 2 * ScaleUI
+
+        if centerX - radius < 0 then centerX = radius end
+        if centerY - radius < 0 then centerY = radius end
+        if centerX + radius > ScrW() then centerX = ScrW() - radius end
+        if centerY + radius > ScrH() then centerY = ScrH() - radius end
+
+        surface.SetFont("SEFFont")
+
+        local FormattedName = effect.Name or SplitCamelCase(effectName)
+        local NameW, NameH = surface.GetTextSize(FormattedName)
+
+        local DescW, DescH = 0, 0
+        if effectDesc and effectDesc ~= "" then
+            DescW, DescH = surface.GetTextSize(effectDesc)
+        end
+
+        local DurW, DurH = surface.GetTextSize("Duration: " .. duration .. " seconds")
+        local TotalWidth = math.max(NameW, DurW, DescW)
+        local TotalHeight = NameH + DurH + DescH
+
+        local StackAmount = PlayerEffectStacks[effectName] or 0
+        local StackName = (StackAmount > 0) and (effect.StackName or "Stacks") or nil
+
+        local StackWidth, StackHeight, StackNumberWidth, StackNumberHeight = nil, nil, nil, nil
+        if StackName then
+            StackWidth, StackHeight = surface.GetTextSize(StackName)
+            StackNumberWidth, StackNumberHeight = surface.GetTextSize(tostring(StackAmount))
+        end
+
+        if not CachedMaterials[effect] then
+            CachedMaterials[effect] = Material(effect.Icon)
+        end
+
+        local icon = CachedMaterials[effect]
+
+        if effect.Type == "BUFF" then
+            surface.SetDrawColor(30, 255, 0, 255)
+            TextColor, BarColor = Color(30, 255, 0, 255), Color(30, 125, 0)
+        else
+            surface.SetDrawColor(255, 0, 0, 255)
+            TextColor, BarColor = Color(255, 0, 0, 255), Color(80, 0, 0)
+        end
+
+        local function DrawCircularRing(centerX, centerY, radius, thickness, angleStart, angleEnd, color)
+            surface.SetDrawColor(color)
+
+            for i = angleStart, angleEnd do
+                local rad = math.rad(i)
+                local nextRad = math.rad(i + 1)
+
+                for t = 0, thickness do
+                    local r = radius - t
+                    surface.DrawLine(
+                        centerX + math.cos(rad) * r,
+                        centerY + math.sin(rad) * r,
+                        centerX + math.cos(nextRad) * r,
+                        centerY + math.sin(nextRad) * r
+                    )
+                end
+            end
+        end
+
+        DrawCircularRing(centerX, centerY, radius, InnerRadiusThickness, 0, 360, BarColor)
+
+        -- Dynamiczny pierścień czasu (kolorowy)
+        local currentTime = CurTime()
+        local progress = math.Clamp((currentTime - startTime) / duration, 0, 1)
+        local angleStart = -90
+        local angleEnd = angleStart + 360 * (1 - progress)
+
+        DrawCircularRing(centerX, centerY, radius + 2, RadiusThickness, angleStart, angleEnd, TextColor)
+
+        -- Ikona
+        surface.SetMaterial(icon)
+        surface.SetDrawColor(255, 255, 255, 255)
+        surface.DrawTexturedRectRotated(centerX, centerY, 32 * ScaleUI, 32 * ScaleUI, 0)
+
+        if mouseX >= centerX - 16 * ScaleUI and mouseX <= centerX + 16 * ScaleUI and mouseY >= centerY - 16 * ScaleUI and mouseY <= centerY + 16 * ScaleUI then
+            local tooltipX = mouseX
+            local tooltipY = mouseY + 30
+    
+            if tooltipX + TotalWidth + 10 > ScrW() then
+                tooltipX = ScrW() - TotalWidth - 10
+            end
+            if tooltipY + TotalHeight > ScrH() then
+                tooltipY = ScrH() - TotalHeight - 10
+            end
+    
+            surface.SetDrawColor(0, 0, 0, 200)
+            surface.DrawRect(tooltipX, tooltipY, TotalWidth + 10, TotalHeight)
+            
+            draw.SimpleText(FormattedName, "SEFFont", tooltipX + 5, tooltipY, Color(255, 208, 0), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+
+            if DescH > 0 then
+                draw.DrawText(effectDesc, "SEFFont", tooltipX + 5, tooltipY + NameH, TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+            end
+
+            draw.SimpleText("Duration: " .. duration .. " seconds", "SEFFont", tooltipX + 5, tooltipY + NameH + DescH, TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
         end
     end
     
@@ -493,6 +610,12 @@ if CLIENT then
 
                 StatusEffX = StatusEffX + 50
 
+            elseif StatusEffectStyle == 3 then
+
+                DrawCircularStatusEffectTimer(StatusEffX , StatusEffY, effectName, effectData.Desc, effectData.Duration, effectData.StartTime)
+
+                StatusEffX = StatusEffX + 50
+
             elseif StatusEffectStyle == -1 then end
 
         end
@@ -530,7 +653,12 @@ if CLIENT then
         local ScaleUI = GetConVar("SEF_ScaleUI"):GetFloat()
         local AdjustValue = ScaleUI > 2 and ScaleUI * 0.5 or 1
     
-        local icon = Material(effect.Icon)
+        if not CachedMaterials[effect] then
+            CachedMaterials[effect] = Material(effect.Icon)
+        end
+
+        local icon = CachedMaterials[effect]
+
         local radius = 11.5 * AdjustValue
         local innerRadius = 9.5 * AdjustValue
     

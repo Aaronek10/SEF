@@ -728,6 +728,10 @@ StatusEffects = {
         EffectBegin = function(ent)
             if ent:IsPlayer() then
                 ent:DoAnimationEvent(ACT_HL2MP_IDLE_COWER)
+            elseif ent:IsNPC() then
+                ent:SetNPCState(NPC_STATE_INVALID)
+                ent:SetSchedule(SCHED_DIE_RAGDOLL)
+                ent:SetCondition(67)
             elseif ent.IsLambdaPlayer then
                 ent:DoAnimationEvent(ACT_HL2MP_IDLE_COWER)
                 ent.l_isfrozen = true
@@ -749,6 +753,9 @@ StatusEffects = {
         EffectEnd = function(ent)
             if ent:IsPlayer() then
                 ent:DoAnimationEvent(ACT_HL2MP_RUN)
+            elseif ent:IsNPC() then
+                ent:SetNPCState(NPC_STATE_IDLE)
+                ent:SetCondition(68)
             elseif ent.IsLambdaPlayer then
                 ent:DoAnimationEvent(ACT_HL2MP_RUN)
             end
