@@ -359,7 +359,7 @@ if SERVER then
     // STACK SYSTEM FUNCTIONS
 
     function ENTITY:AddSEFStacks(effect, amount)
-        amount = amount or 1
+        amount = amount or 0
     
         local effectData = StatusEffects[effect] or PassiveEffects[effect]
     
@@ -371,7 +371,7 @@ if SERVER then
     
         if StatusEffects[effect] then
             EntEffectStacks[self] = EntEffectStacks[self] or {}
-            EntEffectStacks[self][effect] = (EntEffectStacks[self][effect] or 1) + amount
+            EntEffectStacks[self][effect] = (EntEffectStacks[self][effect] or 0) + amount
 
             if self:IsPlayer() then
                 net.Start("SEF_StackSystem")
@@ -383,7 +383,7 @@ if SERVER then
 
         elseif PassiveEffects[effect] then
             EntPassiveStacks[self] = EntPassiveStacks[self] or {}
-            EntPassiveStacks[self][effect] = (EntPassiveStacks[self][effect] or 1) + amount
+            EntPassiveStacks[self][effect] = (EntPassiveStacks[self][effect] or 0) + amount
 
             if self:IsPlayer() then
                 net.Start("SEF_StackSystem")
