@@ -236,6 +236,13 @@ if SERVER then
 
     hook.Add("InitPostEntity", "CreateSEFHooks", function() 
         CreateEffectHooks()
+
+        for _, ply in ipairs(player.GetAll()) do
+            if ply:IsValid() then
+                ply:ConCommand("SEF_CreateClientHooks")
+                ply:ClearAllEffectDelays() -- To ensure no residual delays
+            end
+        end
     end)
 
     concommand.Add("SEF_CreateEffectHooks", function(ply, cmd, args)

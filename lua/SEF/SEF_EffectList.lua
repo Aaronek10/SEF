@@ -20,17 +20,18 @@ StatusEffects = {
         end,
         Effect = function(ent, time, healamount, delay)
             local TimeLeft = ent:GetTimeLeft("Healing")
+            local EffectDelay = ent:GetEffectDelay("Healing")
             local HealDelay = delay
 
             if HealDelay == nil then HealDelay = 0.3 end
 
             if TimeLeft > 0.1 then
-                if not ent.HealingEffectDelay then
-                    ent.HealingEffectDelay  = CurTime()
+                if not EffectDelay then
+                    ent:SetEffectDelay("Healing", CurTime())
                 end
-                if CurTime() >= ent.HealingEffectDelay then
+                if CurTime() >= EffectDelay then
                     ent:SetHealth(math.min(ent:Health() + healamount, ent:GetMaxHealth()))
-                    ent.HealingEffectDelay = CurTime() + HealDelay
+                    ent:SetEffectDelay("Healing", CurTime() + HealDelay)
                 end
             end
         end,
@@ -128,13 +129,15 @@ StatusEffects = {
             local HealDelay = delay
             if HealDelay == nil then HealDelay = 0.3 end
 
-            if TimeLeft > 0.1  then
-                if not ent.ShieldingEffectDelay then
-                    ent.ShieldingEffectDelay = CurTime()
+            local EffectDelay = ent:GetEffectDelay("Energized")
+
+            if TimeLeft > 0.1 then
+                if not EffectDelay then
+                    ent:SetEffectDelay("Energized", CurTime())
                 end
-                if CurTime() >= ent.ShieldingEffectDelay  then
+                if CurTime() >= EffectDelay  then
                     ent:SetArmor(math.min(ent:Armor() + healamount, maxamount))
-                    ent.ShieldingEffectDelay = CurTime() + HealDelay
+                    ent:SetEffectDelay("Energized", CurTime() + HealDelay)
                 end
             end
         end,
@@ -541,10 +544,11 @@ StatusEffects = {
         end,
         Effect = function(ent, time, damageamount, delay, inf)
             local TimeLeft = ent:GetTimeLeft("Bleeding")
+            local EffectDelay = ent:GetEffectDelay("Bleeding")
             if TimeLeft > 0.1 then
 
-                if not ent.BleedingEffectDelay then
-                    ent.BleedingEffectDelay  = CurTime()
+                if not EffectDelay then
+                    ent:SetEffectDelay("Bleeding", CurTime())
                 end
 
                 local BleedDelay = delay
@@ -580,7 +584,7 @@ StatusEffects = {
 
                     ent:EmitSound(randomSound, 100, math.random(90, 140), 1, CHAN_AUTO)
                     
-                    ent.BleedingEffectDelay = CurTime() + BleedDelay
+                    ent:SetEffectDelay("Bleeding", CurTime() + BleedDelay)
                 end
             end
         end,
@@ -808,15 +812,16 @@ StatusEffects = {
         end,
         Effect = function(ent, time, witheramount, delay)
             local TimeLeft = ent:GetTimeLeft("Wither")
+            local EffectDelay = ent:GetEffectDelay("Wither")
             if TimeLeft > 0.1 then
     
-                if not ent.WitheringEffectDelay then
-                    ent.WitheringEffectDelay = CurTime()
+                if not EffectDelay then
+                    ent:SetEffectDelay("Wither", CurTime())
                 end
-    
-                if CurTime() >= ent.WitheringEffectDelay  then
+
+                if CurTime() >= EffectDelay then
                     ent:SetHealth(math.min(ent:Health() - witheramount, ent:GetMaxHealth()))
-                    ent.WitheringEffectDelay = CurTime() + delay
+                    ent:SetEffectDelay("Wither", CurTime() + delay)
                 end
     
                 if ent:IsPlayer() and ent:Health() <= 0 and ent:Alive()then
@@ -845,17 +850,19 @@ StatusEffects = {
         end,
         Effect = function(ent, time, dischAmount, delay)
             local TimeLeft = ent:GetTimeLeft("Discharge")
+            local EffectDelay = ent:GetEffectDelay("Discharge")
 
             if TimeLeft > 0.1 and ent.Armor then
                 if isnumber(ent:Armor()) then
-                    if not ent.ShieldingEffectDelay then
-                        ent.ShieldingEffectDelay = CurTime()
+
+                    if not EffectDelay then
+                        ent:SetEffectDelay("Discharge", CurTime())
                     end
-        
-                    if CurTime() >= ent.ShieldingEffectDelay then
+
+                    if CurTime() >= EffectDelay then
                         if ent.Armor and ent:Armor() > 0 then
                             ent:SetArmor(math.min(ent:Armor() - dischAmount))
-                            ent.ShieldingEffectDelay = CurTime() + delay
+                            ent:SetEffectDelay("Discharge", CurTime() + delay)
                         end
                     end
         
@@ -933,10 +940,11 @@ StatusEffects = {
         end,
         Effect = function(ent, time, damageamount, delay, inf)
             local TimeLeft = ent:GetTimeLeft("Poison")
+            local EffectDelay = ent:GetEffectDelay("Poison")
             if TimeLeft > 0.1 then
 
-                if not ent.PoisonEffectDelay then
-                    ent.PoisonEffectDelay  = CurTime()
+                if not EffectDelay then
+                    ent:SetEffectDelay("Poison", CurTime())
                 end
 
                 local PoisonDelay = delay
@@ -974,7 +982,7 @@ StatusEffects = {
                         ent:EmitSound("physics/flesh/flesh_impact_bullet2.wav", 100, math.random(70, 135), 1)
                     end
 
-                    ent.PoisonEffectDelay = CurTime() + PoisonDelay
+                    ent:SetEffectDelay("Poison", CurTime() + PoisonDelay)
                 end
             end
         end,
@@ -1339,9 +1347,11 @@ StatusEffects = {
         Type = "DEBUFF",
         Effect = function(ent, time)
             local TimeLeft = ent:GetTimeLeft("DeepWound")
+            local EffectDelay = ent:GetEffectDelay("DeepWound")
             if TimeLeft > 0.1 then
-                if not ent.DeepWoundEffectDelay then
-                    ent.DeepWoundEffectDelay = CurTime()
+
+                if not EffectDelay then
+                    ent:SetEffectDelay("DeepWound", CurTime())
                 end
 
                 if ent:HaveEffect("Resilience") then
@@ -1355,7 +1365,7 @@ StatusEffects = {
                         local maxHealth = ent:GetMaxHealth()
                         local damageAmount = maxHealth * 0.01  -- 1% of max health
                         ent:SetHealth(math.max(ent:Health() - damageAmount, 0))
-                        ent.DeepWoundEffectDelay = CurTime() + 0.5
+                        ent:SetEffectDelay("DeepWound", CurTime() + 0.5)
 
                         if ent:Health() <= 0 then
                             if ent:IsPlayer() then

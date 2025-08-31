@@ -355,6 +355,51 @@ if SERVER then
         end
     end
 
+    // SYSTEM OF EFFECT TICKS TO FIX PROBLEMS WITH CHANGELEVEL TIME MISMATCH
+
+    function ENTITY:GetAllEffectDelays()
+        local delays = {}
+        for effectName, _ in pairs(StatusEffects) do
+            local key = effectName .. "EffectDelay"
+            if self[key] then
+                delays[effectName] = self[key]
+            end
+        end
+        return delays
+    end
+
+    -- Ustawia delay dla danego efektu
+    function ENTITY:SetEffectDelay(effectName, delay)
+        if not IsValid(self) then return end
+        local key = effectName .. "EffectDelay"
+        self[key] = delay
+
+        if GetConVar("SEF_LoggingMode"):GetBool() then
+            print("[Status Effect Framework] Set Effect Delay for effect: " .. effectName .. " on entity: " .. tostring(self) .. " to " .. tostring(delay))
+        end
+    end
+
+    -- Pobiera delay dla danego efektu
+    function ENTITY:GetEffectDelay(effectName)
+        if not IsValid(self) then return nil end
+        local key = effectName .. "EffectDelay"
+        if self[key] == nil then return 0 end
+        return self[key]
+    end
+
+    -- Czyści wszystkie delay efektów na encji
+    function ENTITY:ClearAllEffectDelays()
+        if not IsValid(self) then return end
+        for effectName, _ in pairs(StatusEffects) do
+            local key = effectName .. "EffectDelay"
+            self[key] = nil
+
+            if GetConVar("SEF_LoggingMode"):GetBool() then
+                print("[Status Effect Framework] Cleared Effect Delay for effect: " .. effectName .. " on entity: " .. tostring(self))
+            end
+        end
+    end
+
 
     // STACK SYSTEM FUNCTIONS
 
@@ -439,7 +484,7 @@ if SERVER then
     
     
     function ENTITY:RemoveSEFStacks(effect, amount)
-        amount = amount or 1
+        amount = amount or 0
 
         local effectData = StatusEffects[effect] or PassiveEffects[effect]
         if not effectData or not effectData.Stackable then
