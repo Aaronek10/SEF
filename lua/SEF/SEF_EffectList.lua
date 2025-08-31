@@ -554,7 +554,7 @@ StatusEffects = {
                 local BleedDelay = delay
                 if BleedDelay == nil then BleedDelay = 0.3 end
 
-                if CurTime() >= ent.BleedingEffectDelay  then
+                if CurTime() >= EffectDelay then
                     if IsValid(inf) then
                         local dmg = DamageInfo()
                         dmg:SetDamage(damageamount)
