@@ -961,7 +961,7 @@ StatusEffects = {
                     ent.PoisonEffectHP = ent:Health()
                 end
 
-                if CurTime() >= ent.PoisonEffectDelay  then
+                if CurTime() >= EffectDelay then
                     if IsValid(inf) then
                         local dmg = DamageInfo()
                         dmg:SetDamage(damageamount)
