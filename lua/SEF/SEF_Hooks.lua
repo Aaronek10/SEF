@@ -1,10 +1,18 @@
 
 if SERVER then
-    hook.Add("Think", "EntityStatusEffectsThink", function()
+
+    local function IsValidEntity(ent)
+        return IsValid(ent) and (ent:IsPlayer() or ent:IsNPC() or ent:IsNextBot())
+    end
+
+
+    hook.Add("Think", "EntitySEFThink", function()
+        local currentTime = CurTime()
         for entity, effects in pairs(EntActiveEffects) do
-            if IsValid(entity) and (entity:IsPlayer() or entity:IsNPC() or entity:IsNextBot()) then
+            if IsValidEntity(entity) then
+                local toRemove = {} -- tabela na efekty do usunięcia
+
                 for effectName, effectData in pairs(effects) do
-                    local currentTime = CurTime()
                     local TimeLeft = effectData.StartTime + effectData.Duration - currentTime
                     if TimeLeft > 0 then
                         if not effectData.HasBegun or (effectData.HasBegun and effectData.IsReApplied) then
@@ -19,28 +27,29 @@ if SERVER then
                             effectData.Function(entity, effectData.Duration, unpack(effectData.Args))
                         end
                     else
-                        if effectData.FunctionEnd then
-                            effectData.FunctionEnd(entity, unpack(effectData.Args))
-                        end
-
-                        if effectData.Stackable then
-                            entity:ResetSEFStacks(effectName)
-                        end
-
-                        entity:RemoveEffect(effectName)
+                        table.insert(toRemove, effectName)
                     end
+                end
+
+                for _, effectName in ipairs(toRemove) do
+                    local effectData = effects[effectName]
+                    if effectData.FunctionEnd then
+                        effectData.FunctionEnd(entity, unpack(effectData.Args))
+                    end
+
+                    if effectData.Stackable then
+                        entity:ResetSEFStacks(effectName)
+                    end
+
+                    entity:RemoveEffect(effectName)
                 end
             elseif not IsValid(entity) then
                 EntActiveEffects[entity] = nil
             end
         end
-    end)
-    
-    
 
-    hook.Add("Think", "EntityPassivesEffectThink", function()
         for entity, Passives in pairs(EntActivePassives) do
-            if IsValid(entity) and (entity:IsPlayer() or entity:IsNPC() or entity:IsNextBot()) then
+            if IsValidEntity(entity) then
                 for effectName, PassiveData in pairs(Passives) do
                     if PassiveData.Function then
                         PassiveData.Function(entity)
@@ -51,7 +60,6 @@ if SERVER then
             end
         end
     end)
-
 
     local function CreateEffectHooks()
         -- Przetwarzanie efektów
