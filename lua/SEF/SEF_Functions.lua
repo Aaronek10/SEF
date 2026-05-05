@@ -15,6 +15,8 @@ if SERVER then
     EntEffectStacks = {}
     EntPassiveStacks = {}
 
+    EntSEFDelays = {}
+
 
     // CORE SEF FUNCTIONS
 
@@ -356,23 +358,25 @@ if SERVER then
     end
 
     // SYSTEM OF EFFECT TICKS TO FIX PROBLEMS WITH CHANGELEVEL TIME MISMATCH
-
     function ENTITY:GetAllEffectDelays()
         local delays = {}
-        for effectName, _ in pairs(StatusEffects) do
-            local key = effectName .. "EffectDelay"
-            if self[key] then
-                delays[effectName] = self[key]
-            end
+        local entTable = EntSEFDelays[self]
+        if not entTable then return delays end
+
+        for effectName, data in pairs(entTable) do
+            delays[effectName] = data.delay
         end
+
         return delays
     end
 
     -- Ustawia delay dla danego efektu
     function ENTITY:SetEffectDelay(effectName, delay)
         if not IsValid(self) then return end
-        local key = effectName .. "EffectDelay"
-        self[key] = delay
+
+        EntSEFDelays[self] = EntSEFDelays[self] or {}
+        EntSEFDelays[self][effectName] = EntSEFDelays[self][effectName] or {}
+        EntSEFDelays[self][effectName].delay = delay
 
         if GetConVar("SEF_LoggingMode"):GetBool() then
             print("[Status Effect Framework] Set Effect Delay for effect: " .. effectName .. " on entity: " .. tostring(self) .. " to " .. tostring(delay))
@@ -381,22 +385,22 @@ if SERVER then
 
     -- Pobiera delay dla danego efektu
     function ENTITY:GetEffectDelay(effectName)
-        if not IsValid(self) then return nil end
-        local key = effectName .. "EffectDelay"
-        if self[key] == nil then return 0 end
-        return self[key]
+        if not IsValid(self) then return 0 end
+
+        local entTable = EntSEFDelays[self]
+        if not entTable or not entTable[effectName] then return 0 end
+
+        return entTable[effectName].delay or 0
     end
 
-    -- Czyści wszystkie delay efektów na encji
+    -- Czyści wszystkie delaye efektów na encji
     function ENTITY:ClearAllEffectDelays()
         if not IsValid(self) then return end
-        for effectName, _ in pairs(StatusEffects) do
-            local key = effectName .. "EffectDelay"
-            self[key] = nil
 
-            if GetConVar("SEF_LoggingMode"):GetBool() then
-                print("[Status Effect Framework] Cleared Effect Delay for effect: " .. effectName .. " on entity: " .. tostring(self))
-            end
+        EntSEFDelays[self] = nil
+
+        if GetConVar("SEF_LoggingMode"):GetBool() then
+            print("[Status Effect Framework] Cleared all Effect Delays on entity: " .. tostring(self))
         end
     end
 

@@ -244,13 +244,10 @@ if SERVER then
 
     hook.Add("InitPostEntity", "CreateSEFHooks", function() 
         CreateEffectHooks()
+    end)
 
-        for _, ply in ipairs(player.GetAll()) do
-            if ply:IsValid() then
-                ply:ConCommand("SEF_CreateClientHooks")
-                ply:ClearAllEffectDelays() -- To ensure no residual delays
-            end
-        end
+    hook.Add("OnEntityRemoved", "SEF_CleanEntDelays", function(ent)
+        EntSEFDelays[ent] = nil
     end)
 
     concommand.Add("SEF_CreateEffectHooks", function(ply, cmd, args)
@@ -359,9 +356,15 @@ else
     end
 
 
-    hook.Add("InitPostEntity", "CreateSEFClientHooks", function() 
-        CreateClientEffectHooks()
-        CreateDisplayHooks()
+    hook.Add("InitPostEntity", "CreateSEFClientHooks", function()
+        timer.Simple(5, function()  
+            CreateClientEffectHooks()
+            CreateDisplayHooks()
+
+            if GetConVar("SEF_LoggingMode"):GetBool() then
+                print("[Status Effect Framework] Client SEF Hooks initialized.")
+            end
+        end)
     end)
 
     concommand.Add("SEF_CreateClientHooks", function(ply, cmd, args)
